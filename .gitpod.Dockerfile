@@ -19,8 +19,8 @@ RUN PGDATA="${PGDATA//\/workspace/$HOME}" \
  && printf '#!/bin/bash\npg_ctl -D $PGDATA -l ~/.pg_ctl/log -o "-k ~/.pg_ctl/sockets" stop\n' > ~/.pg_ctl/bin/pg_stop \
  && chmod +x ~/.pg_ctl/bin/* \
  && printf '%s\n' '# Auto-start PostgreSQL server' \
-                  "test -e $PGDATA && mv ${PGDATA%/data} /workspace" \
-                  '[[ \$(pg_ctl status | grep PID) ]] || pg_start > /dev/null\n' > ~/.bashrc.d/200-postgresql-launch
+                  "test ! -e \$PGWORKSPACE && test -e ${PGDATA%/data} && mv ${PGDATA%/data} /workspace" \
+                  '[[ $(pg_ctl status | grep PID) ]] || pg_start > /dev/null\n' > ~/.bashrc.d/200-postgresql-launch
 ENV PATH="$HOME/.pg_ctl/bin:$PATH"
 ENV DATABASE_URL="postgresql://gitpod@localhost"
 ENV PGHOSTADDR="127.0.0.1"
