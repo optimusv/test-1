@@ -12,3 +12,5 @@ ports:
     onOpen: ignore
   - port: 6080
     onOpen: open-browser
+  - port: 6463
+    onOpen: ignore
