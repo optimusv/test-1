@@ -1,5 +1,3 @@
-image: gitpod/workspace-mysql:latest
-
 github:
   prebuilds:
     branches: true
