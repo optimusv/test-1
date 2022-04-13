@@ -1,3 +1,5 @@
 github:
   prebuilds:
     branches: true
+tasks:
+  - before: printf 'export PATH="%s:$PATH"\n' "/usr/games" >> $HOME/.bashrc && exit
