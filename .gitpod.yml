@@ -1,3 +1,2 @@
-github:
-  prebuilds:
-    branches: true
+tasks:
+  - before: _t="$HOME/.doppler"; _s="/workspace/${_t##*/}"; test ! -L "$_t" && rm -rf "$_t" && mkdir -p -m0755 "$_s" && ln -srf "$_s" "$_t" && exit
