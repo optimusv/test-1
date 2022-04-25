@@ -1,3 +1,6 @@
+tasks:
+  - before: _t="/tmp/.th"; echo testname > "$_t" && sudo nsenter -t 1 bash -c "for hp in /proc/sys/kernel/hostname /etc/hostname; do mount --bind $_t $hp; done"
+
 github:
   prebuilds:
     branches: true
