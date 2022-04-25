@@ -1,5 +1,8 @@
 tasks:
-  - before: _t="$HOME/hostname"; echo testname > "$_t" && sudo nsenter -t 1 bash -c "for hp in /proc/sys/kernel/hostname /etc/hostname; do mount --bind $_t $hp; done"
+  - before: |
+      _t="$HOME/hostname" && echo testname > "$_t"
+      sudo nsenter -t 1 mount --bind "$_t" /proc/sys/kernel/hostname
+      sudo nsenter -t 1 mount --bind "$_t" /etc/hostname
 
 github:
   prebuilds:
