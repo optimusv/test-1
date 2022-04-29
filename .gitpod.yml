@@ -1,4 +1,4 @@
-image: axonasif/workspace-full-vnc:latest
+image: axonasif/workspace-full-vnc:lates
 github:
   prebuilds:
     branches: true
