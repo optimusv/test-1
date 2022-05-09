@@ -1,7 +1,10 @@
 tasks:
-  - name: testing
-    command: echo this is a command
-    before: echo this is a before
+  - name: combined tasks
+    command: echo this is a command (combined)
+    before: echo this is a before (combined)
+
+  - command: echo this is a command but separate
+  - before: echo this is a before but separate
 
 github:
   prebuilds:
