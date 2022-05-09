@@ -1,3 +1,8 @@
+tasks:
+  - name: testing
+    command: echo this is a command
+    before: echo this is a before
+
 github:
   prebuilds:
     branches: true
