@@ -1,3 +1,6 @@
+tasks:
+  - init: pip install numpy
+
 github:
   prebuilds:
     branches: true
