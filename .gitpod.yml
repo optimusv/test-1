@@ -1,3 +1,6 @@
+tasks:
+  - init: docker pull archlinux
+
 github:
   prebuilds:
     branches: true
