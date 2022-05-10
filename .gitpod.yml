@@ -1,3 +1,11 @@
-github:
-  prebuilds:
-    branches: true
+tasks:
+  - name: sz-pdf-client
+    env:
+      PORT: "3003"
+
+    command: |
+      echo "$PORT" # Testing if the var was successfully set
+      cd sz-pdf-client
+    
+    openMode: split-right
+
