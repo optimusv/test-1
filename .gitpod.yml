@@ -3,3 +3,8 @@ image:
 github:
   prebuilds:
     branches: true
+
+vscode:
+  extensions:
+    - rust-lang.rust
+    - matklad.rust-analyzer
