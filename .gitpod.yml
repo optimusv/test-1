@@ -1,5 +1,8 @@
 image:
   file: .gitpod.Dockerfile
+ 
+tasks:
+  init: cargo init .
 github:
   prebuilds:
     branches: true
