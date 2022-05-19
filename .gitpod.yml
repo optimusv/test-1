@@ -3,7 +3,7 @@ image:
 
 tasks:
   - init: cargo init --name rusttest . && exit
-  - command: gp open src/main.rs && exit
+  - command: gp await-port 23000 && gp open src/main.rs && exit
 github:
   prebuilds:
     branches: true
