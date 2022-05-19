@@ -1,9 +1,9 @@
 image:
   file: .gitpod.Dockerfile
- 
+
 tasks:
-  - init: cargo init . && exit
-  - command: code src/main.rs && exit
+  - init: cargo init --name rusttest . && exit
+  - command: gp open src/main.rs && exit
 github:
   prebuilds:
     branches: true
