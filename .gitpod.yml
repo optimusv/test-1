@@ -1,3 +1,8 @@
+image: gitpod/workspace-full-vnc:latest
+
+tasks:
+  - command: sudo install-packages openjdk-8-jre # Recommended to use dockerfile instead
+
 github:
   prebuilds:
     branches: true
