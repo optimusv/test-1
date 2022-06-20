@@ -1,3 +1,9 @@
+image: axonasif/workspace-python:latest
+
+
+tasks:
+  - init: pip install bpytop
+
 github:
   prebuilds:
     branches: true
