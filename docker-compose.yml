@@ -1,0 +1,309 @@
+version: "3.4"
+
+# Attempting to start the containers while using the company VPN causes docker
+# to error due to overlapping networks. This changes the subnet used by the
+# default network to avoid those issues
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.16.238.0/24
+
+volumes:
+  # To reset a volume to a clean state, run from your machine:
+  #   > docker volume rm -f platform-wrapper_{VOLUME_NAME}
+  es-data:
+  db-data-2:
+    external: false
+  bi_db_data_2:
+  bi_mix_build:
+  bi_mix_deps:
+  bi_node_modules:
+
+services:
+  ### Core Platform Services ###
+  # You'll be frequently running these by name via e.g. `docker compose up cooker`
+
+  # The Rails monolith. You almost always need to run this.
+  cooker:
+    build:
+      context: ./cooker/
+    image: cooker:latest
+    env_file:
+      - ./cooker/default.env
+      - ./cooker/.env
+    command: 'bash -c "rm -f tmp/pids/server.pid && rails server -b 0.0.0.0"'
+    logging:
+      driver: json-file
+      options:
+        max-size: "5k"
+        max-file: "2"
+
+    volumes:
+      - ./cooker:/api
+      - ./cooker_kubernetes_config:/mnt
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - redis
+      - cooker-sidekiq
+    cap_add:
+      - SYS_PTRACE
+    # To allow pry
+    tty: true
+    stdin_open: true
+
+  # The Elixir/Phoenix business intelligence API. Only needed if you are developing Looker Platform Embeds
+  bi:
+    build:
+      context: ./data-engineering/
+    image: bi:latest
+    env_file:
+      - ./data-engineering/default.env
+      - ./data-engineering/.env
+    volumes:
+      - ./data-engineering/bi-service:/app
+      # Avoid writing build files / libraries back to host volume for performance
+      - bi_mix_deps:/app/deps
+      - bi_mix_build:/app/_build
+      - bi_node_modules:/app/assets/node_modules
+
+    command: bash ./start.sh
+    ports:
+      - "4000:4000"
+    depends_on:
+      - cooker
+      - bi_db
+    #to allow pry
+    tty: true
+    stdin_open: true
+
+  # The React platform frontend monolith. At time of writing most people *developing* this run it on their host machine
+  # rather than through Docker.
+  main:
+    env_file:
+      - ./main/default.env
+      - ./main/.env
+    build:
+      context: ./main/
+      dockerfile: packages/main/docker/Dockerfile-dev
+    command: "npm --prefix packages/main start"
+    volumes:
+      - ./main/:/app
+
+    ports:
+      - "3001:3001"
+      - "3003:3003"
+      - "8000:8000"
+    depends_on:
+      - cooker
+      - kube_poller
+      - ec2_poller
+
+  # Crisis Sim Companion. A separate mobile friendly app for participating in a Cyber Crisis Simulations. At time of
+  # writing most people *developing* this run it on their host machine rather than through Docker.
+  crisis-sim-companion:
+    build:
+      context: ./main/
+      dockerfile: packages/crisis-sim-companion/docker/Dockerfile-dev
+    command: "npm --prefix packages/crisis-sim-companion start"
+    volumes:
+      - ./main/:/app
+
+    ports:
+      - "3006:3006"
+    depends_on:
+      - cooker
+
+  # API Kubernetes poller. Run if you are modifying or regressing Practical Labs run on Kubernetes
+  kube_poller:
+    build:
+      context: ./machine-pollers/
+    image: machine-pollers:latest
+    volumes:
+      - ./machine-pollers:/app
+    command:
+      - ./bin/poller
+    environment:
+      JWT_SECRET_KEY: poller
+      API_ENDPOINT: "http://cooker:3000/v1/graphql"
+      MUTATION_NAME: pollKubeMachines
+
+  # API EC2 poller. Run if you are modifying or regressing Practical Labs run on EC2
+  ec2_poller:
+    build:
+      context: ./machine-pollers/
+    image: machine-pollers:latest
+    volumes:
+      - ./machine-pollers:/app
+    command:
+      - ./bin/poller
+    environment:
+      JWT_SECRET_KEY: poller
+      API_ENDPOINT: "http://cooker:3000/v1/graphql"
+      MUTATION_NAME: pollEc2Machines
+
+  # ElasticSearch database. Run if you are modifying or regressing search functionality
+  search:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.4.3
+    environment:
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+
+  # Python/Flask service that delivers static Games Labs content into main via an IFrame. Only needed when actively
+  # developing new Labs.
+  games_server:
+    build:
+      context: ./games_server
+    environment:
+      DYNAMO_MODE: "local"
+      GOOGLE_OAUTH_CLIENT_ID: "297030394207-thij8caqj4es8u69957874rg2t11mcqv.apps.googleusercontent.com"
+      GOOGLE_OAUTH_CLIENT_SECRET: "Gp_Glsl4jc86ujfye2_d7wVL"
+      OAUTHLIB_INSECURE_TRANSPORT: "1"
+      MYSQL_USER: "games"
+      MYSQL_PASS: "games"
+      MYSQL_HOST: "db"
+      MYSQL_DBNAME: "games_server"
+      VOYAGER_ENDPOINT: "http://voyeuger:8080/graphql"
+      TEST_PACKING: "true"
+      LC_ALL: "C.UTF-8"
+      LANG: "C.UTF-8"
+    ports:
+      - "80:80"
+    depends_on:
+      - db
+      - voyeuger
+
+  ### Developer Tools ###
+  # These are optional but you may wish to start them for certain purposes
+
+  # Locally hosted Identity Provider (Like 'Sign on with Google') to allow testing of SSO in local dev
+  idp:
+    build:
+      context: ./idp/
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+
+  # Provides a UI for interacting with ElasticSearch
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.4.3
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://search:9200
+      ELASTICSEARCH_HOSTS: '["http://search:9200"]'
+
+  # SMTP email catcher that lets you QA emails locally even if they aren't sent to your email address
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - 8025:8025
+
+  # Tunnel traffic from the internet to localhost. Necessary for running Cloud Labs in development
+  ngrok:
+    image: wernight/ngrok@sha256:f334773a21fdb8c88b320d74ed11f6a2f936840aa85b45e8ddb329823f8e1635
+    env_file:
+      - ./docker-ngrok-content/default.env
+      - ./docker-ngrok-content/.env
+    ports:
+      - 4040:4040
+
+  # Testcafe docker image to run and debug E2E tests locally
+  testcafe:
+    build:
+      context: ./testcafe
+      dockerfile: docker/Dockerfile-dev
+    network_mode: host
+    # This will be enabled in future work on the dev docker image.
+    # extra_hosts:
+    #   - "local.immersivelabs.online:host-gateway"
+    #   - "host.docker.internal:host-gateway"
+    volumes:
+      - ./testcafe/:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: "npm run test:smoke"
+    environment:
+      DISPLAY: $DISPLAY
+      QT_X11_NO_MITSHM: 1
+      _X11_NO_MITSHM: 1
+      _MITSHM: 0
+
+  ### Supporting Services ###
+  # You do not need to run these manually as they are explicitly depended on by upstream services
+  # Cooker's Sidekiq background job queue
+  cooker-sidekiq:
+    build:
+      context: ./cooker/
+    image: cooker:latest
+    env_file:
+      - ./cooker/default.env
+      - ./cooker/.env
+    command: "bundle exec sidekiq"
+    volumes:
+      # TODO rename the directory in the Cooker Docker image
+      - ./cooker:/api
+      - ./cooker_kubernetes_config:/mnt
+    depends_on:
+      - db
+      - redis
+    cap_add:
+      - SYS_PTRACE
+    tty: true
+    stdin_open: true
+
+  # Mock implementation of the Voyeuger / Voyager service, which acts as an intermediary between running Labs and the
+  # APIs they wish to speak to. Not the real service, just a mock.
+  voyeuger:
+    build:
+      context: ./voyager_spoof
+
+  # The Rails monolith's AND Cyber Crisis Simulator's MySQL server. Each application has a separate database inside
+  # the server. Pre-populated from a cleaned production image.
+  db:
+    # If you want to opt-out of using a pre-baked image and instead start from scratch and load a SQL dump, add this
+    # to your docker-compose.override.yml's "db:" section
+    # image: mysql:5.7
+    # To learn how to update this image, see
+    # https://app.nuclino.com/Immersivelabs/Knowledgebase/Using-Pre-Baked-Dev-Database-1f1d24e4-d26f-4135-86c8-4c660820e388
+    image: 491384846940.dkr.ecr.eu-west-1.amazonaws.com/dev-db
+    env_file:
+      - ./cooker/default.env
+      - ./cooker/.env
+    volumes:
+      - db-data-2:/var/lib/mysql
+    ports:
+      - 3306:3306
+    command:
+      [
+        "mysqld",
+        "--user=mysql",
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_ci",
+      ]
+
+  # The Business Intelligence application's PostgreSQL database
+  bi_db:
+    image: postgres:12.4
+    env_file:
+      - ./data-engineering/default.env
+      - ./data-engineering/.env
+    volumes:
+      - bi_db_data_2:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  # Redis key/value datastore. Used by various backend services as a backing database for caches and queues
+  redis:
+    image: redis
+    environment:
+      - "ALLOW_EMPTY_PASSWORD=yes"
+    logging:
+      driver: "none"

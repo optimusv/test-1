@@ -1,3 +1,41 @@
 github:
   prebuilds:
     branches: true
+# multi-repo
+# additionalRepositories:
+#   - url: https://github.com/ImmersiveLabsUkOrg/cooker
+#     checkoutLocation: cooker
+
+# List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
+tasks:
+  - before: |
+      gem install bundle
+      bundle config set --local path 'vendor/bundle'
+  - init: |
+      # Load env vars
+      for env_file in ".env" ".env.server" "some_other_file"; do {
+        if test -e "$env_file"; then {
+          while read -r var; do {
+            if [[ ! "$var" =~ ^# ]]; then {
+              export "$var";
+            } fi
+          } done < "$env_file"
+        } fi
+      } done
+
+      # Do more stuff below that depend on these environment variables
+      # ...
+
+      bash ./setup.sh
+      docker-compose build cooker
+      cd cooker
+      bundle install
+      rake db:create
+      # docker-compose up cooker
+  - command: docker-compose up cooker
+
+# List the ports to expose. Learn more https://www.gitpod.io/docs/config-ports/
+ports:
+  - port: 3000
+    onOpen: open-preview
+# workspaceLocation: cooker/platform-wrapper.code-workspace
