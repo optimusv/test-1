@@ -1,4 +1,5 @@
-image: axonasif/workspace-python:latest
+image:
+  file: .gitpod.Dockerfile
 
 tasks:
   - name: Test installing pip package from prebuild env
