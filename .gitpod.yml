@@ -1,8 +1,14 @@
 image: axonasif/workspace-python:latest
 
-
 tasks:
-  - init: pip install bpytop
+  - name: Test installing pip package from prebuild env
+    init: pip install bpytop
+  - name: Test using `pyenv install <>` from prebuild env
+    init: pyenv install 3.9.0
+  - name: bpytop
+    command: bpytop
+  - name: cowsay
+    command: cowsay Gitpod
 
 github:
   prebuilds:
