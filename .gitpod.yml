@@ -3,4 +3,4 @@ github:
     branches: true
 
 tasks:
-  - before: echo 'export GIT_EDITOR=$(command -v vim)' >> $HOME/.bashrc
+  - before: echo 'export GIT_EDITOR=$(command -v vim)' >> $HOME/.bashrc && exit
