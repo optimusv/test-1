@@ -3,9 +3,9 @@ image:
 
 tasks:
   - name: Test installing pip package from prebuild env
-    init: pip install bpytop && tmate -F
-  - name: Test using `pyenv install <>` from prebuild env
-    init: pyenv install 3.9.0
+    init: pip install bpytop; tmate -F
+  # - name: Test using `pyenv install <>` from prebuild env
+  #   init: pyenv install 3.9.0
   - name: bpytop
     command: bpytop
   - name: cowsay
