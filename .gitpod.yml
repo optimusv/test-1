@@ -2,5 +2,5 @@ github:
   prebuilds:
     branches: true
 
-gitConfig:
-  core.editor: /usr/bin/vim
+tasks:
+  - before: echo 'export GIT_EDITOR=$(command -v vim)' >> $HOME/.bashrc
