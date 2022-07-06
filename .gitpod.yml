@@ -1,3 +1,6 @@
 github:
   prebuilds:
     branches: true
+
+gitConfig:
+  core.editor: /usr/bin/vim
