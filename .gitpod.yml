@@ -1,4 +1,4 @@
-image: gitpod/workspace-full-vnc:2022-06-14-14-04-07
+image: axonasif/workspace-vnc:latest
 github:
   prebuilds:
     branches: true
