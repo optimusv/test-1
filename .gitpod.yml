@@ -1,3 +1,7 @@
 github:
   prebuilds:
     branches: true
+tasks:
+  - name: MySQL
+    #on *.* now..
+    command: mysql -e "CREATE DATABASE platform;" && mysql -e "show databases;" 
