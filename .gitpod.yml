@@ -4,4 +4,6 @@ github:
 tasks:
   - name: MySQL
     #on *.* now..
-    command: mysql -e "CREATE DATABASE platform;" && mysql -e "show databases;" 
+    command: mysql -e "CREATE DATABASE platform;" && mysql -e "show databases;"
+
+image: gitpod/workspace-mysql
