@@ -1,3 +1,7 @@
 github:
   prebuilds:
     branches: true
+
+tasks:
+  - name: test
+    init: echo "$WAKATIME_API" > test.env
