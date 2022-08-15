@@ -4,4 +4,4 @@ github:
 
 tasks:
   - name: test
-    init: echo "$WAKATIME_API" > test.env
+    before: echo "$WAKATIME_API" > test.env
