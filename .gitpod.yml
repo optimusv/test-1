@@ -1,3 +1,6 @@
 github:
   prebuilds:
     branches: true
+
+extensions:
+  - https://github.com/microsoft/vscode-cpptools/releases/download/v1.11.5/cpptools-linux.vsix
